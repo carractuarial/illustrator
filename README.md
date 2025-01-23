@@ -7,6 +7,6 @@ Universal life illustration engine for new business.
 Run simple.py in the terminal / Powershell
 
 ```
-...> python simple.py
+...> python illustrator\simple.py
 132184.0426761172
 ```

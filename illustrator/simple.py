@@ -1,4 +1,4 @@
-from functions import *
+import functions
 
 if __name__ == '__main__':
     issue_age = 35
@@ -25,16 +25,16 @@ if __name__ == '__main__':
     policy_year = 0
 
     for i in range(12*projection_years):
-        policy_year = calculate_policy_year(i+1)
-        start_value = calculate_start_value(end_value)
-        premium = calculate_premium(i+1, annual_premium)
-        premium_load = calculate_premium_load(premium, premium_load_rate)
-        expense_charge = calculate_per_policy_fee(annual_policy_fee) + calculate_per_unit_load(annual_unit_load[policy_year-1], face_amount)
-        value_for_naar = calculate_value_for_naar(start_value, premium, premium_load, expense_charge)
-        naar = calculate_naar(face_amount, naar_discount_rate, value_for_naar)
-        coi = calculate_coi(naar, annual_coi_rate[policy_year-1])
-        value_for_interest = calculate_value_for_interest(value_for_naar, coi)
-        interest = calculate_interest(value_for_interest, interest_rate)
-        end_value = calculate_end_value(value_for_interest, interest)
+        policy_year = functions.calculate_policy_year(i+1)
+        start_value = functions.calculate_start_value(end_value)
+        premium = functions.calculate_premium(i+1, annual_premium)
+        premium_load = functions.calculate_premium_load(premium, premium_load_rate)
+        expense_charge = functions.calculate_per_policy_fee(annual_policy_fee) + functions.calculate_per_unit_load(annual_unit_load[policy_year-1], face_amount)
+        value_for_naar = functions.calculate_value_for_naar(start_value, premium, premium_load, expense_charge)
+        naar = functions.calculate_naar(face_amount, naar_discount_rate, value_for_naar)
+        coi = functions.calculate_coi(naar, annual_coi_rate[policy_year-1])
+        value_for_interest = functions.calculate_value_for_interest(value_for_naar, coi)
+        interest = functions.calculate_interest(value_for_interest, interest_rate)
+        end_value = functions.calculate_end_value(value_for_interest, interest)
 
     print(end_value)
