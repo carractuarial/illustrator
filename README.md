@@ -13,6 +13,12 @@ Run simple.py in the terminal / Powershell as a module from the parent directory
 132184.0426761172
 ```
 
+Alternatively, run objects.py in the terminal / Powershell as a module from the parent directory
+```
+...> python -m illustrator.objects
+132184.0426761172
+```
+
 ### Command-line arguments
 Command-line arguments have been included to facilitate quick execution of different cases. 
 * -g, --gender 
@@ -40,6 +46,8 @@ To use the arguments include the flag and input value. To explicitly run a male,
 ...> python -m illustrator.simple -g M -r NS -i 35 -f 100000 -p 1255.03
 132184.0426761172
 ```
+
+This can be done using illustrator.simple OR illustrator.objects.
 
 ## Tests
 Make sure the included tests successfully execute. Run the following code from the parent directory. The actual run-time may differ on your machine.
