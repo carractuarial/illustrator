@@ -3,7 +3,10 @@ import illustrator.functions as functions
 
 import abc
 import argparse
+import csv
 import dataclasses
+import os
+import sqlite3
 
 
 @dataclasses.dataclass
@@ -11,6 +14,90 @@ class Insured:
     gender: str
     risk_class: str
     issue_age: str
+
+
+class SQLiteRateDatabase:
+
+    def __init__(self, connection_path: str):
+        self._connection = sqlite3.connect(connection_path)
+
+    def import_csv(self, file_path: str):
+        # convert file name to table name
+        file_name = os.path.split(file_path)[-1]
+        file_ext = os.path.splitext(file_path)[-1]
+        table_name = file_name.removesuffix(file_ext)
+        table_name = table_name.replace(" ", "_")
+
+        # remove existing table if applicable
+        sql = f"DROP TABLE IF EXISTS [{table_name}]"
+        self._connection.execute(sql)
+
+        # create table structure
+        with open(file_path, "r") as f:
+            reader = csv.DictReader(f)
+            fields_and_types = {}
+            for field in reader.fieldnames:
+                if field == 'Rate':
+                    fields_and_types[field] = "float"
+                elif field in ["Issue_Age", "Attained_Age", "Policy_Year"]:
+                    fields_and_types[field] = "int"
+                else:
+                    fields_and_types[field] = "varchar"
+            sql = f"CREATE TABLE [{table_name}] ({','.join([k + " " + v for k, v in fields_and_types.items()])})"
+            self._connection.execute(sql)
+
+            # add records to table
+            total_fields = len(fields_and_types)
+            placeholders = ['?'] * total_fields
+            sql = f"INSERT INTO [{table_name}] ({','.join(reader.fieldnames)}) VALUES ({','.join(placeholders)})"
+            for row in reader:
+                self._connection.execute(sql, list(row.values()))
+        self._connection.commit()
+
+    def read_table_for_insured(self, insured: Insured, table_name: str, table_type: str, default: float) -> list[float]:
+        # prepare default output
+        output = [default for _ in range(120)]
+
+        # build SQL statement
+        # determine headers of table
+        sql = f"SELECT * FROM [{table_name}] WHERE 1 = 0"
+        cursor = self._connection.execute(sql)
+        headers = [f[0] for f in cursor.description]
+
+        # build WHERE clause
+        where_clauses = []
+        if "Issue_Age" in headers:
+            where_clauses.append(f"Issue_Age = {insured.issue_age}")
+        if "Gender" in headers:
+            where_clauses.append(f"Gender = '{insured.gender}'")
+        if "Risk_Class" in headers:
+            where_clauses.append(f"Risk_Class = '{insured.risk_class}'")
+        where = " WHERE " + \
+            ' AND '.join(where_clauses) if where_clauses else ""
+
+        # determine SELECT fields
+        select_fields = []
+        if table_type == 'Policy_Year':
+            select_fields.append('Policy_Year')
+        select_fields.append('Rate')
+
+        sql = f"SELECT {','.join(select_fields)} FROM [{table_name}]{where}"
+
+        # execute SQL statement
+        cursor = self._connection.execute(sql)
+        results = cursor.fetchall()
+
+        # translate query results
+        if table_type == 'Flat':
+            output = [results[0][0] for _ in range(120)]
+        elif table_type == 'Policy_Year':
+            for row in results:
+                output[row[0]-1] = row[1]
+        else:
+            raise
+
+        # return final output
+        return output
 
 
 class Rates:
@@ -63,16 +150,21 @@ class Product(BaseProduct):
 
     def __init__(self):
         self.maturity_age = 121
+        self._db_path = './data/data.db'
 
     def get_rates_for_insured(self, insured: Insured) -> Rates:
-        premium_loads = df.read_flat_csv('./data/premium_load.csv')
-        policy_fees = df.read_flat_csv('./data/policy_fee.csv')
-        unit_loads = df.read_ia_py_csv(
-            './data/unit_load.csv', insured.issue_age)
-        naar_discounts = df.read_flat_csv('./data/naar_discount.csv', 1)
-        coi_rates = df.read_gen_rc_ia_py_csv(
-            './data/coi.csv', insured.gender, insured.risk_class, insured.issue_age)
-        interest_rates = df.read_flat_csv('./data/interest_rate.csv')
+        db = SQLiteRateDatabase(self._db_path)
+        premium_loads = db.read_table_for_insured(
+            insured, 'premium_load', 'Flat', 0)
+        policy_fees = db.read_table_for_insured(
+            insured, 'policy_fee', 'Flat', 0)
+        unit_loads = db.read_table_for_insured(
+            insured, 'unit_load', 'Policy_Year', 0)
+        naar_discounts = db.read_table_for_insured(
+            insured, 'naar_discount', 'Flat', 1)
+        coi_rates = db.read_table_for_insured(insured, 'coi', 'Policy_Year', 0)
+        interest_rates = db.read_table_for_insured(
+            insured, 'interest_rate', 'Flat', 0)
 
         rates = Rates(premium_loads, policy_fees, unit_loads,
                       naar_discounts, coi_rates, interest_rates)

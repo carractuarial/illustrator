@@ -19,6 +19,19 @@ Alternatively, run objects.py in the terminal / Powershell as a module from the 
 132184.0426761172
 ```
 
+Using objects.py requires preparing a SQLite database 'data.db' in './data/' first. Run the following commands:
+```
+>>> import illustrator.objects as iobj
+>>> db = iobj.SQLiteRateDatabase('./data/data.db')
+>>> db.import_csv('./data/coi.csv')
+>>> db.import_csv('./data/interest_rate.csv')
+>>> db.import_csv('./data/naar_discount.csv')
+>>> db.import_csv('./data/policy_fee.csv')
+>>> db.import_csv('./data/premium_load.csv')
+>>> db.import_csv('./data/unit_load.csv')
+>>> exit()
+``` 
+
 ### Command-line arguments
 Command-line arguments have been included to facilitate quick execution of different cases. 
 * -g, --gender 
